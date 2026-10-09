@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bé Khám Phá Thế Giới - Kéo Thả Lời Chào</title>
+  <!-- Google Fonts: Baloo 2 bo tròn, siêu dễ thương cho học sinh lớp 2 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+  <!-- Tone.js cho âm thanh chúc mừng vui nhộn tự động sinh ra mà không cần file ngoài -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- Canvas Confetti cho hiệu ứng pháo hoa giấy rực rỡ -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --bg-sky: #E0F2FE;
+      --card-white: #FFFFFF;
+      --accent-yellow: #FEF08A;
+      --border-soft: #BAE6FD;
+      --text-dark: #1E293B;
+      --primary-blue: #0284C7;
+      --correct-green: #22C55E;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at 50% 20%, #F0F9FF 0%, #BAE6FD 100%);
+      font-family: 'Baloo 2', cursive, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 12px;
+      color: var(--text-dark);
+      overflow-x: hidden;
+    }
+
+    /* Tiêu đề và thanh điểm */
+    header {
+      text-align: center;
+      width: 100%;
+      max-width: 720px;
+      margin-bottom: 8px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 800;
+      color: #0369A1;
+      text-shadow: 2px 2px 0px #FFFFFF;
+      letter-spacing: 0.5px;
+    }
+
+    .sub-title {
+      font-size: 16px;
+      color: #0284C7;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #FFFFFF;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #EA580C;
+      border: 2px solid #FDE68A;
+      box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);
+      margin-top: 8px;
+    }
+
+    /* Vùng thẻ chữ kéo thả */
+    .word-stage {
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      position: relative;
+    }
+
+    .draggable-word {
+      background: linear-gradient(135deg, #FFFBEB 0%, #FEF08A 100%);
+      border: 3.5px dashed #F59E0B;
+      padding: 14px 42px;
+      border-radius: 50px;
+      font-size: 30px;
+      font-weight: 800;
+      color: #B45309;
+      cursor: grab;
+      box-shadow: 0 10px 22px rgba(245, 158, 11, 0.28), 0 3px 6px rgba(0,0,0,0.06);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      touch-action: none;
+      position: relative;
+      z-index: 10;
+    }
+
+    .draggable-word:active,
+    .draggable-word.dragging {
+      cursor: grabbing;
+      transform: scale(1.1) rotate(-2deg);
+      box-shadow: 0 16px 28px rgba(245, 158, 11, 0.35);
+    }
+
+    .draggable-word.shake-wrong {
+      animation: shakeWord 0.45s ease-in-out;
+      background: #FEE2E2 !important;
+      border-color: #EF4444 !important;
+      color: #DC2626 !important;
+    }
+
+    @keyframes shakeWord {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-14px) rotate(-3deg); }
+      40% { transform: translateX(12px) rotate(3deg); }
+      60% { transform: translateX(-10px) rotate(-2deg); }
+      80% { transform: translateX(8px) rotate(2deg); }
+    }
+
+    /* Lưới các ô đất nước */
+    .country-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      width: 100%;
+      max-width: 680px;
+      margin-bottom: 12px;
+    }
+
+    .country-card {
+      background: #FFFFFF;
+      border: 3.5px solid #E0F2FE;
+      border-radius: 24px;
+      padding: 16px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 125px;
+      box-shadow: 0 8px 18px rgba(186, 230, 253, 0.4), 0 3px 6px rgba(0,0,0,0.04);
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s, background-color 0.2s;
+      position: relative;
+    }
+
+    /* Quốc kỳ SVG sắc nét với khung bo góc mềm mại */
+    .flag-box {
+      width: 84px;
+      height: 56px;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      margin-bottom: 8px;
+      pointer-events: none;
+    }
+
+    .flag-box svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .country-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: #334155;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    /* Trạng thái khi từ rê tới ô */
+    .country-card.drag-target-hover {
+      border-color: #38BDF8;
+      background: #F0F9FF;
+      transform: scale(1.06);
+    }
+
+    /* Trạng thái khi trả lời đúng */
+    .country-card.pop-correct {
+      animation: popGreen 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      background: #ECFDF5;
+      border-color: #34D399;
+    }
+
+    @keyframes popGreen {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.14) rotate(2deg); }
+      70% { transform: scale(0.96) rotate(-1deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+
+    /* Hộp thoại khen ngợi nổi lên */
+    .toast-praise {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.6);
+      background: #FFFFFF;
+      border: 4px solid #FBBF24;
+      border-radius: 28px;
+      padding: 20px 36px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 999;
+    }
+
+    .toast-praise.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .toast-praise-text {
+      font-size: 26px;
+      font-weight: 800;
+      color: #D97706;
+      line-height: 1.3;
+    }
+
+    .toast-sub {
+      font-size: 16px;
+      font-weight: 700;
+      color: #059669;
+      margin-top: 4px;
+    }
+
+    /* Responsive cho màn hình điện thoại */
+    @media (max-width: 580px) {
+      .country-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      .flag-box {
+        width: 72px;
+        height: 48px;
+      }
+      .title {
+        font-size: 22px;
+      }
+      .draggable-word {
+        font-size: 24px;
+        padding: 12px 30px;
+      }
+      .country-name {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1 class="title">✨ Bé Ghép Đúng Lời Chào ✨</h1>
+    <p class="sub-title">Em hãy kéo lời chào vào đúng lá cờ của đất nước nhé!</p>
+    <div class="score-badge">
+      <span>⭐ Điểm của bé:</span>
+      <span id="scoreText">0</span>
+    </div>
+  </header>
+
+  <!-- Vùng hiển thị từ vựng cần kéo -->
+  <main class="word-stage" id="wordStage">
+    <!-- Thẻ chữ sẽ được tạo bằng JavaScript -->
+  </main>
+
+  <!-- Lưới 6 ô quốc kỳ -->
+  <section class="country-grid" id="countryGrid">
+    <!-- 6 ô đất nước được render động -->
+  </section>
+
+  <!-- Thông báo chúc mừng khi đúng -->
+  <div class="toast-praise" id="toastPraise">
+    <div class="toast-praise-text" id="toastTitle">🎉 Tuyệt Vời Quá! ⭐</div>
+    <div class="toast-sub" id="toastSub">Bé trả lời chính xác rồi!</div>
+  </div>
+
+  <script>
+    // Định nghĩa 6 quốc gia và cờ SVG chuẩn, gọn nhẹ, không phụ thuộc ảnh bên ngoài
+    const FLAGS_SVG = {
+      // Việt Nam: Nền đỏ, sao vàng
+      vn: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+            <rect width="300" height="200" fill="#DA251D"/>
+            <polygon fill="#FFFF00" points="150,45 163,85 205,85 171,110 184,150 150,126 116,150 129,110 95,85 137,85"/>
+           </svg>`,
+      // Nước Mỹ: Sọc đỏ trắng và góc xanh sao
+      us: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+            <rect width="300" height="200" fill="#B22234"/>
+            <rect y="15.38" width="300" height="15.38" fill="#FFF"/>
+            <rect y="46.15" width="300" height="15.38" fill="#FFF"/>
+            <rect y="76.92" width="300" height="15.38" fill="#FFF"/>
+            <rect y="107.69" width="300" height="15.38" fill="#FFF"/>
+            <rect y="138.46" width="300" height="15.38" fill="#FFF"/>
+            <rect y="169.23" width="300" height="15.38" fill="#FFF"/>
+            <rect width="125" height="107.69" fill="#3C3B6E"/>
+            <circle cx="25" cy="22" r="5" fill="#FFF"/>
+            <circle cx="62" cy="22" r="5" fill="#FFF"/>
+            <circle cx="100" cy="22" r="5" fill="#FFF"/>
+            <circle cx="43" cy="54" r="5" fill="#FFF"/>
+            <circle cx="81" cy="54" r="5" fill="#FFF"/>
+            <circle cx="25" cy="86" r="5" fill="#FFF"/>
+            <circle cx="62" cy="86" r="5" fill="#FFF"/>
+            <circle cx="100" cy="86" r="5" fill="#FFF"/>
+           </svg>`,
+      // Nhật Bản: Nền trắng, mặt trời đỏ tròn
+      jp: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+            <rect width="300" height="200" fill="#FFFFFF"/>
+            <circle cx="150" cy="100" r="60" fill="#BC002D"/>
+           </svg>`,
+      // Hàn Quốc: Nền trắng, vòng tròn Thái cực và 4 quẻ
+      kr: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+            <rect width="300" height="200" fill="#FFFFFF"/>
+            <path d="M 150,55 A 45,45 0 0,1 150,145 A 22.5,22.5 0 0,1 150,100 A 22.5,22.5 0 0,0 150,55 Z" fill="#CD2E3A"/>
+            <path d="M 150,145 A 45,45 0 0,1 150,55 A 22.5,22.5 0 0,1 150,100 A 22.5,22.5 0 0,0 150,145 Z" fill="#0047A0"/>
+            <!-- 4 quẻ đơn giản hóa tượng trưng -->
+            <rect x="35" y="40" width="8" height="30" rx="3" fill="#000" transform="rotate(35 39 55)"/>
+            <rect x="50" y="40" width="8" height="30" rx="3" fill="#000" transform="rotate(35 54 55)"/>
+            <rect x="240" y="40" width="8" height="30" rx="3" fill="#000" transform="rotate(-35 244 55)"/>
+            <rect x="255" y="40" width="8" height="30" rx="3" fill="#000" transform="rotate(-35 259 55)"/>
+            <rect x="35" y="130" width="8" height="30" rx="3" fill="#000" transform="rotate(-35 39 145)"/>
+            <rect x="50" y="130" width="8" height="30" rx="3" fill="#000" transform="rotate(-35 54 145)"/>
+            <rect x="240" y="130" width="8" height="30" rx="3" fill="#000" transform="rotate(35 244 145)"/>
+            <rect x="255" y="130" width="8" height="30" rx="3" fill="#000" transform="rotate(35 259 145)"/>
+           </svg>`,
+      // Nước Pháp: 3 dải sọc Xanh Dương - Trắng - Đỏ
+      fr: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="200" fill="#002654"/>
+            <rect x="100" width="100" height="200" fill="#FFFFFF"/>
+            <rect x="200" width="100" height="200" fill="#CE1126"/>
+           </svg>`,
+      // Trung Quốc: Nền đỏ, 5 ngôi sao vàng
+      cn: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+            <rect width="300" height="200" fill="#EE1C25"/>
+            <!-- Sao lớn -->
+            <polygon fill="#FFFF00" points="50,22 55,37 70,37 58,47 62,62 50,52 38,62 42,47 30,37 45,37"/>
+            <!-- 4 sao nhỏ -->
+            <circle cx="95" cy="22" r="6" fill="#FFFF00"/>
+            <circle cx="112" cy="38" r="6" fill="#FFFF00"/>
+            <circle cx="112" cy="62" r="6" fill="#FFFF00"/>
+            <circle cx="95" cy="78" r="6" fill="#FFFF00"/>
+           </svg>`
+    };
+
+    const COUNTRIES = [
+      { id: "vn", name: "Việt Nam", word: "Xin chào" },
+      { id: "us", name: "Nước Mỹ", word: "Hello" },
+      { id: "jp", name: "Nhật Bản", word: "Konnichiwa" },
+      { id: "kr", name: "Hàn Quốc", word: "Annyeong" },
+      { id: "fr", name: "Nước Pháp", word: "Bonjour" },
+      { id: "cn", name: "Trung Quốc", word: "Nǐ hǎo" }
+    ];
+
+    let currentItem = null;
+    let pool = [...COUNTRIES];
+    let score = 0;
+    let isProcessing = false;
+
+    const praises = [
+      "🎉 Hoan hô! Em giỏi quá! ⭐",
+      "🌟 Tuyệt vời! Chính xác rồi! 🎈",
+      "👏 Giỏi lắm! Tiếp tục nào bé ơi! 🥳",
+      "🏆 Quá xuất sắc! Đúng rồi! 💖"
+    ];
+
+    let synth = null;
+    function playSound(type) {
+      try {
+        if (!synth) {
+          synth = new Tone.PolySynth(Tone.Synth).toDestination();
+          synth.volume.value = -6;
+        }
+        if (Tone.context.state !== 'running') {
+          Tone.start();
+        }
+
+        if (type === 'correct') {
+          // Âm thanh vui tươi đi lên
+          synth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "8n");
+        } else if (type === 'wrong') {
+          // Âm trầm báo sai nhẹ nhàng
+          synth.triggerAttackRelease(["D3", "Bb2"], "16n");
+        }
+      } catch (e) {
+        // Trình duyệt chặn audio nếu chưa tương tác, bỏ qua an toàn
+      }
+    }
+
+    const wordStage = document.getElementById("wordStage");
+    const countryGrid = document.getElementById("countryGrid");
+    const scoreText = document.getElementById("scoreText");
+    const toastPraise = document.getElementById("toastPraise");
+    const toastTitle = document.getElementById("toastTitle");
+    const toastSub = document.getElementById("toastSub");
+
+    // Khởi tạo các ô đất nước
+    function initZones() {
+      countryGrid.innerHTML = "";
+      COUNTRIES.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "country-card";
+        card.dataset.id = item.id;
+        card.innerHTML = `
+          <div class="flag-box">${FLAGS_SVG[item.id]}</div>
+          <div class="country-name">${item.name}</div>
+        `;
+
+        // Sự kiện kéo thả chuột tiêu chuẩn
+        card.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          if (!isProcessing) card.classList.add("drag-target-hover");
+        });
+
+        card.addEventListener("dragleave", () => {
+          card.classList.remove("drag-target-hover");
+        });
+
+        card.addEventListener("drop", (e) => {
+          e.preventDefault();
+          card.classList.remove("drag-target-hover");
+          if (!isProcessing) {
+            checkAnswer(card.dataset.id, card);
+          }
+        });
+
+        countryGrid.appendChild(card);
+      });
+    }
+
+    function spawnNextWord() {
+      if (pool.length === 0) {
+        pool = [...COUNTRIES];
+      }
+
+      // Tránh lặp lại câu hỏi ngay lập tức nếu còn nhiều hơn 1 lựa chọn
+      let nextIndex = Math.floor(Math.random() * pool.length);
+      if (currentItem && pool.length > 1 && pool[nextIndex].id === currentItem.id) {
+        nextIndex = (nextIndex + 1) % pool.length;
+      }
+
+      currentItem = pool.splice(nextIndex, 1)[0];
+      wordStage.innerHTML = "";
+
+      const wordEl = document.createElement("div");
+      wordEl.className = "draggable-word";
+      wordEl.textContent = currentItem.word;
+      wordEl.draggable = true;
+
+      // Kéo thả chuột
+      wordEl.addEventListener("dragstart", (e) => {
+        if (isProcessing) {
+          e.preventDefault();
+          return;
+        }
+        wordEl.classList.add("dragging");
+        e.dataTransfer.setData("text/plain", currentItem.id);
+      });
+
+      wordEl.addEventListener("dragend", () => {
+        wordEl.classList.remove("dragging");
+      });
+
+      // Hỗ trợ cảm ứng vuốt trên máy tính bảng / điện thoại
+      setupTouchDrag(wordEl);
+
+      wordStage.appendChild(wordEl);
+      isProcessing = false;
+    }
+
+    function checkAnswer(chosenId, targetCard) {
+      if (isProcessing || !currentItem) return;
+
+      const wordEl = wordStage.querySelector(".draggable-word");
+
+      if (chosenId === currentItem.id) {
+        // ĐÚNG:
+        isProcessing = true;
+        score += 10;
+        scoreText.textContent = score;
+
+        playSound('correct');
+        targetCard.classList.add("pop-correct");
+
+        // Bắn hoa giấy confetti
+        confetti({
+          particleCount: 50,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+
+        // Hiển thị lời khen
+        const randomPraise = praises[Math.floor(Math.random() * praises.length)];
+        toastTitle.textContent = randomPraise;
+        toastSub.textContent = `"${currentItem.word}" là tiếng chào của ${currentItem.name}!`;
+        toastPraise.classList.add("show");
+
+        setTimeout(() => {
+          toastPraise.classList.remove("show");
+          targetCard.classList.remove("pop-correct");
+          spawnNextWord();
+        }, 1150);
+      } else {
+        // SAI:
+        playSound('wrong');
+        if (wordEl) {
+          wordEl.classList.add("shake-wrong");
+          setTimeout(() => {
+            wordEl.classList.remove("shake-wrong");
+          }, 450);
+        }
+      }
+    }
+
+    function setupTouchDrag(el) {
+      let startX, startY;
+      let activeHoverCard = null;
+
+      el.addEventListener("touchstart", (e) => {
+        if (isProcessing) return;
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        el.classList.add("dragging");
+      }, { passive: true });
+
+      el.addEventListener("touchmove", (e) => {
+        if (isProcessing) return;
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - startX;
+        const deltaY = touch.clientY - startY;
+
+        el.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.1)`;
+
+        // Nhận diện ô đang rê vào
+        el.style.visibility = "hidden";
+        const underElement = document.elementFromPoint(touch.clientX, touch.clientY);
+        el.style.visibility = "visible";
+
+        const hoveredCard = underElement ? underElement.closest(".country-card") : null;
+        if (activeHoverCard && activeHoverCard !== hoveredCard) {
+          activeHoverCard.classList.remove("drag-target-hover");
+        }
+        if (hoveredCard) {
+          hoveredCard.classList.add("drag-target-hover");
+          activeHoverCard = hoveredCard;
+        } else {
+          activeHoverCard = null;
+        }
+      }, { passive: true });
+
+      el.addEventListener("touchend", (e) => {
+        if (isProcessing) return;
+        const touch = e.changedTouches[0];
+        el.style.visibility = "hidden";
+        const dropElement = document.elementFromPoint(touch.clientX, touch.clientY);
+        el.style.visibility = "visible";
+
+        // Trả lại vị trí cũ mượt mà
+        el.style.transform = "";
+        el.classList.remove("dragging");
+
+        if (activeHoverCard) {
+          activeHoverCard.classList.remove("drag-target-hover");
+          activeHoverCard = null;
+        }
+
+        const finalCard = dropElement ? dropElement.closest(".country-card") : null;
+        if (finalCard) {
+          checkAnswer(finalCard.dataset.id, finalCard);
+        }
+      });
+    }
+
+    // Khởi chạy game
+    initZones();
+    spawnNextWord();
+  </script>
+</body>
+</html>
